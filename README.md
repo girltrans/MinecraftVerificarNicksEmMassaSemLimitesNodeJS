@@ -17,4 +17,4 @@
 
 # -> 🔧 Como Rodar:
 
-# ! Como já está tudo baixado, node checkNicks.js já resolve. (se tiver o node.js Instalado) !
+# ! Como já está tudo baixado,  Para Rodar: node checkNicks.js (Se tiver o node.js Instalado) !
