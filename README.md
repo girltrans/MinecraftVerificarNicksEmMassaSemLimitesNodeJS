@@ -1,3 +1,5 @@
+# Limite Padrão 1 Trilhão De Requisições Por Segundo. *(Pode Ser Alterado Manualmente)*
+
 # ! Instalar Node.js (se ainda não tiver). !
 
 # -> Abrir a pasta com o terminal: Tutorial_1.png
