@@ -37,7 +37,8 @@ async function fetchWithLimit(urls, limit = 1000000000000) {
             try {
                 const res = await fetch(url);
                 results[current] = res;
-            } catch {
+            } catch (error) {
+                console.error(`Erro ao fazer a requisição para ${url}:`, error);
                 results[current] = null;
             }
         }
@@ -48,15 +49,29 @@ async function fetchWithLimit(urls, limit = 1000000000000) {
 }
 async function verificacaoMassa(count = 3, tipo = 2, porSegundo = 1000000000000) {
     let charset = "";
-    if (tipo === 1) charset = "0123456789";
-    else if (tipo === 2) charset = "abcdefghijklmnopqrstuvwxyz";
-    else if (tipo === 3) charset = "abcdefghijklmnopqrstuvwxyz_";
-    else if (tipo === 4) charset = "abcdefghijklmnopqrstuvwxyz0123456789";
-    else if (tipo === 5) charset = "abcdefghijklmnopqrstuvwxyz0123456789_";
+    let charsetDescription = "";
+    if (tipo === 1) {
+        charset = "0123456789";
+        charsetDescription = "Apenas números (0-9)";
+    }
+    else if (tipo === 2) {
+        charset = "abcdefghijklmnopqrstuvwxyz";
+        charsetDescription = "Apenas letras (a-z)";
+    } else if (tipo === 3) {
+        charset = "abcdefghijklmnopqrstuvwxyz_";
+        charsetDescription = "Letras + underscore (a-z, _)";
+    } else if (tipo === 4) {
+        charset = "abcdefghijklmnopqrstuvwxyz0123456789";
+        charsetDescription = "Letras + números (a-z, 0-9)";
+    } else if (tipo === 5) {
+        charset = "abcdefghijklmnopqrstuvwxyz0123456789_";
+        charsetDescription = "Letras + números + underscore (a-z, 0-9, _)";
+    }
     const combos = gerarCombinacoes(charset, count);
     console.log(`⏳ Verificando ${combos.length} combinações (${porSegundo} requisições por segundo)...`);
     const urls = combos.map(nick => `https://playerdb.co/api/player/minecraft/${nick}`);
     const responses = await fetchWithLimit(urls, porSegundo);
+    let verificados = 0;
     let disponiveis = [];
     for (let i = 0; i < responses.length; i++) {
         const res = responses[i];
@@ -70,14 +85,38 @@ async function verificacaoMassa(count = 3, tipo = 2, porSegundo = 1000000000000)
                 if (!text.includes('"player.found"')) {
                     disponiveis.push(nick);
                 }
-            } catch {}
+            } catch (error) {
+                console.error(`Erro ao processar a resposta para o nick ${nick}:`, error);
+            }
         }
+        verificados++;
+        console.log(`Progresso: ${verificados}/${combos.length} nicks verificados`);
     }
     if (disponiveis.length > 0) {
         console.log(`✅ Nicks disponíveis (${disponiveis.length}):`);
         console.log(disponiveis.join("\n"));
-        fs.writeFileSync("disponiveis.txt", disponiveis.join("\n"), "utf8");
-        console.log("💾 Lista salva em disponiveis.txt");
+
+        const now = new Date().toLocaleString();
+        const totalNicksSaved = disponiveis.length;
+
+        const header = `--- Relatório de Nicks Disponíveis ---\n` +
+                       `Data e Hora: ${now}\n` +
+                       `Quantidade de Caracteres: ${count}\n` +
+                       `Tipo de Caracteres: ${charsetDescription} (Opção ${tipo})\n` +
+                       `Requisições por Segundo: ${porSegundo}\n` +
+                       `Total de Nicks Salvos: ${totalNicksSaved}\n` +
+                       `------------------------------------`;
+        disponiveis.unshift(header);
+        let fileName = "disponiveis.txt";
+        let fileNumber = 2;
+
+        while (fs.existsSync(fileName)) {
+            fileName = `disponiveis${fileNumber}.txt`;
+            fileNumber++;
+        }
+
+        fs.writeFileSync(fileName, disponiveis.join("\n"), "utf8");
+        console.log(`💾 Lista salva em ${fileName}`);
     } else {
         console.log("❌ Nenhum nick disponível encontrado.");
     }
